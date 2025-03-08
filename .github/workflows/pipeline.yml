@@ -1,0 +1,97 @@
+name: CI/CD with SonarQube, Prometheus & Grafana on Kubernetes
+
+on:
+  schedule:
+    - cron: '0 0 */12 * *'  # Run every 12 hours
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Set up Kubernetes credentials
+      - name: Set up Kubernetes credentials
+        uses: Azure/setup-kubeconfig@v1
+        with:
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      # Set up Java and Maven
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+
+      # Cache Maven dependencies
+      - name: Cache Maven dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Build and run tests with Maven
+      - name: Build and Test Project with Maven
+        run: mvn clean test
+
+      # Upload code quality and coverage to SonarQube
+      - name: Upload code quality and coverage to SonarQube
+        run: mvn sonar:sonar -Dsonar.projectKey=my_project_key -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=$SONAR_TOKEN
+
+      # Export test execution time to Prometheus (e.g., execution time)
+      - name: Export test execution time to Prometheus
+        run: |
+          TEST_EXECUTION_TIME=$(grep "Time:" target/test-logs/* | awk '{print $2}')
+          echo "test_execution_time_seconds=$TEST_EXECUTION_TIME" | kubectl exec -i <prometheus-pod-name> -- curl --data-binary @- http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9091/metrics/job/test_metrics
+
+      # Push metrics to Prometheus
+      - name: Push metrics to Prometheus
+        run: |
+          curl --data "test_execution_time_seconds=$TEST_EXECUTION_TIME" http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9091/metrics/job/test_metrics
+
+      # Wait for Prometheus and Grafana to start (useful for demo purposes)
+      - name: Wait for Prometheus and Grafana
+        run: |
+          echo "Waiting for Prometheus and Grafana to start"
+          sleep 30
+
+      # Upload test results as artifact
+      - name: Upload Results as Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: unit-test-results
+          path: target/test-logs/*
+
+      # Send email notification
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_PASSWORD }}
+          subject: "CI/CD Pipeline for SonarQube, Prometheus, and Grafana is complete"
+          body: |
+            Hello,
+
+            The CI/CD pipeline has completed successfully. You can access the following tools for monitoring and quality checks:
+
+            - SonarQube: http://localhost:9000
+            - Prometheus: http://localhost:9090
+            - Grafana: http://localhost:3000
+
+            Regards,
+            CI/CD Pipeline
+
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: ${{ secrets.GMAIL_USERNAME }}
