@@ -1,0 +1,6 @@
+sonar:
+  monitoring:
+    enabled: true
+    #monitoringPasscode: "your-passcode-here"  # Or use a secret reference below:
+    monitoringPasscodeSecretName: "sonarqube-monitoring-passcode"
+    monitoringPasscodeSecretKey: "monitoringPasscode"
