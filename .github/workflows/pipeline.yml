@@ -14,14 +14,14 @@ jobs:
 
     steps:
       # Step 1: Checkout code
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
       # Step 2: Set up Azure CLI
       - name: Set up Azure CLI
         uses: azure/setup-azurecli@v2
         with:
-          azcliversion: '2.32.0'
+          azcliversion: '2.67.0'
 
       # Step 3: Azure Login
       - name: Azure Login
