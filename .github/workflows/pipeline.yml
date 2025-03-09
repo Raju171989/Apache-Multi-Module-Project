@@ -21,6 +21,7 @@ jobs:
       checks: write    # Allow write access to checks (for reporting statuses)
       deployments: write # Allow writing deployments
       statuses: write  # Allow status updates
+      id-token: write
       # GitHub API permissions can be fully controlled with `repo` scope if required
       # Note: you may define more granular permissions here
 
