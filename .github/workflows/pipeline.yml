@@ -107,7 +107,7 @@ jobs:
             echo "Grafana is already installed."
           fi
 
-      # Step 9: Expose services if not already exposed
+      # Step 9: Expose services if not already exposedd
       - name: Expose services
         run: |
           kubectl expose deployment sonarqube --type=LoadBalancer --name=sonarqube-lb --namespace monitoring || echo "SonarQube service already exposed"
