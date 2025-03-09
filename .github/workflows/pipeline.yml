@@ -52,7 +52,7 @@ jobs:
           username: ${{ secrets.AZURE_USERNAME }}
           password: ${{ secrets.AZURE_PASSWORD }}
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          #auth-type: 'Apache-service-principal'
+          auth-type: 'service-principal'
 
       # Step 4: Get AKS credentials
       - name: Get AKS Credentials
