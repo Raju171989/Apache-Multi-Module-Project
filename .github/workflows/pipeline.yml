@@ -12,6 +12,8 @@ jobs:
   install-and-test:
     runs-on: ubuntu-latest
 
+    permissions: read-all|write-all
+
     steps:
       # Step 1: Checkout code
       - name: Checkout repository
