@@ -1,97 +1,152 @@
-name: CI/CD with SonarQube, Prometheus & Grafana on Kubernetes
+name: Install SonarQube, Prometheus, Grafana on AKS & Run UTs
 
 on:
   schedule:
-    - cron: '0 0 */12 * *'  # Run every 12 hours
+    - cron: '0 */12 * * *'  # Runs every 12 hours
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:  # Manually trigger the workflow
 
 jobs:
-  build:
+  install-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository code
-      - name: Checkout repository
+      # Step 1: Checkout code
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      # Set up Kubernetes credentials
-      - name: Set up Kubernetes credentials
-        uses: Azure/setup-kubeconfig@v1
+      # Step 2: Set up Azure CLI
+      - name: Set up Azure CLI
+        uses: azure/setup-azurecli@v1
         with:
-          kubeconfig: ${{ secrets.KUBECONFIG }}
+          azcliversion: '2.32.0'
 
-      # Set up Java and Maven
-      - name: Set up Java
-        uses: actions/setup-java@v2
+      # Step 3: Azure Login
+      - name: Azure Login
+        uses: azure/login@v1
         with:
-          java-version: '11'
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          username: ${{ secrets.AZURE_USERNAME }}
+          password: ${{ secrets.AZURE_PASSWORD }}
 
-      # Cache Maven dependencies
-      - name: Cache Maven dependencies
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-
-      # Build and run tests with Maven
-      - name: Build and Test Project with Maven
-        run: mvn clean test
-
-      # Upload code quality and coverage to SonarQube
-      - name: Upload code quality and coverage to SonarQube
-        run: mvn sonar:sonar -Dsonar.projectKey=my_project_key -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=$SONAR_TOKEN
-
-      # Export test execution time to Prometheus (e.g., execution time)
-      - name: Export test execution time to Prometheus
+      # Step 4: Get AKS credentials
+      - name: Get AKS Credentials
         run: |
-          TEST_EXECUTION_TIME=$(grep "Time:" target/test-logs/* | awk '{print $2}')
-          echo "test_execution_time_seconds=$TEST_EXECUTION_TIME" | kubectl exec -i <prometheus-pod-name> -- curl --data-binary @- http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9091/metrics/job/test_metrics
+          az aks get-credentials --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --name ${{ secrets.AZURE_AKS_CLUSTER_NAME }}
 
-      # Push metrics to Prometheus
-      - name: Push metrics to Prometheus
+      # Step 5: Set up Helm
+      - name: Set up Helm
+        uses: azure/setup-helm@v1
+
+      # Step 6: Check if SonarQube is already installed, if not, install
+      - name: Install SonarQube if not installed
         run: |
-          curl --data "test_execution_time_seconds=$TEST_EXECUTION_TIME" http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9091/metrics/job/test_metrics
+          if ! kubectl get deployment sonarqube --namespace monitoring; then
+            echo "Installing SonarQube..."
+            helm repo add sonarqube https://charts.sonarsource.com
+            helm repo update
+            PASSWORD="Welcome"
+            kubectl create secret generic sonarqube-password --from-literal=password=$PASSWORD --namespace monitoring
+            helm install sonarqube sonarqube/sonarqube --namespace monitoring --set sonarqubePassword=$PASSWORD
+          else
+            echo "SonarQube is already installed."
+          fi
 
-      # Wait for Prometheus and Grafana to start (useful for demo purposes)
-      - name: Wait for Prometheus and Grafana
+      # Step 7: Check if Prometheus is already installed, if not, install
+      - name: Install Prometheus if not installed
         run: |
-          echo "Waiting for Prometheus and Grafana to start"
-          sleep 30
+          if ! kubectl get deployment prometheus-server --namespace monitoring; then
+            echo "Installing Prometheus..."
+            helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+            helm repo update
+            kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring
+            helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
+          else
+            echo "Prometheus is already installed."
+          fi
 
-      # Upload test results as artifact
-      - name: Upload Results as Artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: unit-test-results
-          path: target/test-logs/*
+      # Step 8: Check if Grafana is already installed, if not, install
+      - name: Install Grafana if not installed
+        run: |
+          if ! kubectl get deployment grafana --namespace monitoring; then
+            echo "Installing Grafana..."
+            helm repo add grafana https://grafana.github.io/helm-charts
+            helm repo update
+            kubectl create secret generic grafana-password --from-literal=password="Welcome" --namespace monitoring
+            helm install grafana grafana/grafana --namespace monitoring --set adminPassword="Welcome"
+          else
+            echo "Grafana is already installed."
+          fi
 
-      # Send email notification
-      - name: Send email notification
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.GMAIL_USERNAME }}
-          password: ${{ secrets.GMAIL_PASSWORD }}
-          subject: "CI/CD Pipeline for SonarQube, Prometheus, and Grafana is complete"
-          body: |
-            Hello,
+      # Step 9: Expose services if not already exposed
+      - name: Expose services
+        run: |
+          kubectl expose deployment sonarqube --type=LoadBalancer --name=sonarqube-lb --namespace monitoring || echo "SonarQube service already exposed"
+          kubectl expose deployment prometheus-server --type=LoadBalancer --name=prometheus-lb --namespace monitoring || echo "Prometheus service already exposed"
+          kubectl expose deployment grafana --type=LoadBalancer --name=grafana-lb --namespace monitoring || echo "Grafana service already exposed"
 
-            The CI/CD pipeline has completed successfully. You can access the following tools for monitoring and quality checks:
+      # Step 10: Get the URLs of the services and send an email
+      - name: Get service URLs and send email
+        run: |
+          SONARQUBE_URL=$(kubectl get svc sonarqube-lb --namespace monitoring --output=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          PROMETHEUS_URL=$(kubectl get svc prometheus-lb --namespace monitoring --output=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          GRAFANA_URL=$(kubectl get svc grafana-lb --namespace monitoring --output=jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-            - SonarQube: http://localhost:9000
-            - Prometheus: http://localhost:9090
-            - Grafana: http://localhost:3000
+          echo "SonarQube URL: $SONARQUBE_URL"
+          echo "Prometheus URL: $PROMETHEUS_URL"
+          echo "Grafana URL: $GRAFANA_URL"
+          
+          # Send an email with the URLs (Configure your email sending tool in GitHub secrets)
+          curl -X POST -H "Content-Type: application/json" \
+            -d '{"to": "your-email@example.com", "subject": "SonarQube, Prometheus, and Grafana Deployed", "body": "SonarQube: $SONARQUBE_URL, Prometheus: $PROMETHEUS_URL, Grafana: $GRAFANA_URL"}' \
+            ${{ secrets.EMAIL_API_URL }}  # You can use an API like SendGrid or any SMTP API
 
-            Regards,
-            CI/CD Pipeline
+      # Step 11: Run Unit Tests and Collect Coverage
+      - name: Run Unit Tests and Collect Coverage
+        run: |
+          # Install Maven (required for Java projects)
+          sudo apt-get install -y maven
 
-          to: ${{ secrets.NOTIFY_EMAIL }}
-          from: ${{ secrets.GMAIL_USERNAME }}
+          # Run tests with Maven (JUnit) and JaCoCo for code coverage
+          mvn clean test jacoco:report
+
+          # Save the coverage report
+          mvn jacoco:report
+
+      # Step 12: Upload code coverage to SonarQube
+      - name: Upload Coverage to SonarQube
+        run: |
+          sonar-scanner -Dsonar.projectKey=Apache-Project \
+                        -Dsonar.sources=./src \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.host.url=http://$SONARQUBE_URL \
+                        -Dsonar.login=$SONARQUBE_TOKEN
+
+      # Step 13: Record Execution Time for Unit Tests
+      - name: Record UT Execution Time
+        run: |
+          START_TIME=$(date +%s)
+          mvn clean test
+          END_TIME=$(date +%s)
+          EXECUTION_TIME=$((END_TIME - START_TIME))
+          echo "Unit Tests execution time: $EXECUTION_TIME seconds"
+
+      # Step 14: Update Grafana Dashboard with Coverage and Execution Time
+      - name: Update Grafana Dashboard
+        run: |
+          # Configure Grafana to display code coverage and execution time trends
+          # Example: Use Prometheus data sources in Grafana to visualize coverage over time
+          curl -X POST -H "Content-Type: application/json" \
+            -d '{"dashboard": {"title": "Unit Test Metrics", "panels": [{"title": "Test Coverage", "targets": [{"expr": "sum(test_coverage)"}]}]}}' \
+            http://$GRAFANA_URL/api/dashboards/db
+
+      # Step 15: Send email with test results
+      - name: Send email with test results
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+            -d '{"to": "your-email@example.com", "subject": "Unit Test Results", "body": "Unit Tests completed in $EXECUTION_TIME seconds, coverage report available at $SONARQUBE_URL"}' \
+            ${{ secrets.EMAIL_API_URL }}
