@@ -53,7 +53,7 @@ jobs:
           #username: ${{ secrets.AZURE_USERNAME }}
           #password: ${{ secrets.AZURE_PASSWORD }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          auth-type: 'SERVICE_PRINCIPAL'
+          auth-type: 'azure-cli'
 
       # Step 4: Get AKS credentials
       - name: Get AKS Credentials
