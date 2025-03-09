@@ -69,7 +69,7 @@ jobs:
         run: |
           if ! kubectl get deployment sonarqube --namespace monitoring; then
             echo "Installing SonarQube..."
-            helm repo add sonarqube https://charts.sonarsource.com
+            helm repo add sonarqube https://SonarSource.github.io/helm-chart-sonarqube
             helm repo update
             PASSWORD="Welcome"
             kubectl create secret generic sonarqube-password --from-literal=password=$PASSWORD --namespace monitoring
