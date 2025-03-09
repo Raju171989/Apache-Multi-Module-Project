@@ -74,6 +74,8 @@ jobs:
             PASSWORD="Welcome"
             kubectl create namespace monitoring
             kubectl create secret generic sonarqube-password --from-literal=password=$PASSWORD --namespace monitoring
+            kubectl create secret generic sonarqube-monitoring-passcode-secretname --from-literal=monitoringPasscodeSecretName=monitoringPasscodeSecretName --namespace monitoring
+            kubectl create secret generic sonarqube-monitoring-passcode-secretkey --from-literal=monitoringPasscodeSecretKey=monitoringPasscodeSecretKey --namespace monitoring
             helm install sonarqube sonarqube/sonarqube --namespace monitoring --set sonarqubePassword=$PASSWORD
           else
             echo "SonarQube is already installed."
