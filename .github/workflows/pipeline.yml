@@ -46,13 +46,13 @@ jobs:
       - name: Azure Login
         uses: azure/login@v1
         with:
-          #client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          #client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          #tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           username: ${{ secrets.AZURE_USERNAME }}
           password: ${{ secrets.AZURE_PASSWORD }}
           #subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          #auth-type: 'SERVICE_PRINCIPAL'
+          auth-type: 'SERVICE_PRINCIPAL'
 
       # Step 4: Get AKS credentials
       - name: Get AKS Credentials
