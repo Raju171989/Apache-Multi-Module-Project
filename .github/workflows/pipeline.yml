@@ -13,19 +13,16 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      actions: read|write
-      checks: read|write
-      contents: read|write
-      deployments: read|write
-      id-token: read|write
-      issues: read|write
-      discussions: read|write
-      packages: read|write
-      pages: read|write
-      pull-requests: read|write
-      repository-projects: read|write
-      security-events: read|write
-      statuses: read|write
+      # Full permissions to all resources
+      contents: read  # Read access to repository contents (code, issues, etc.)
+      issues: write   # Allow writing issues
+      pull-requests: write  # Allow creating pull requests
+      actions: write   # Allow managing actions and workflows
+      checks: write    # Allow write access to checks (for reporting statuses)
+      deployments: write # Allow writing deployments
+      statuses: write  # Allow status updates
+      # GitHub API permissions can be fully controlled with `repo` scope if required
+      # Note: you may define more granular permissions here
 
     steps:
       # Step 1: Checkout code
