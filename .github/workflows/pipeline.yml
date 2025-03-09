@@ -72,6 +72,7 @@ jobs:
             helm repo add sonarqube https://SonarSource.github.io/helm-chart-sonarqube
             helm repo update
             PASSWORD="Welcome"
+            kubectl create namespace monitoring
             kubectl create secret generic sonarqube-password --from-literal=password=$PASSWORD --namespace monitoring
             helm install sonarqube sonarqube/sonarqube --namespace monitoring --set sonarqubePassword=$PASSWORD
           else
