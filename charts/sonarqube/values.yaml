@@ -36,8 +36,8 @@ sonar:
   monitoring:
     enabled: true  # Enable monitoring integration
     #passcode: "Welcome"  # Set the monitoring passcode to "Welcome"
-    monitoringPasscodeSecretName: "Welcome"
-    monitoringPasscodeSecretKey: "Welcome"
+    PasscodeSecretName: "Welcome"
+    PasscodeSecretKey: "Welcome"
 
   # Ingress configuration (for exposing SonarQube via LoadBalancer)
   #ingress:
