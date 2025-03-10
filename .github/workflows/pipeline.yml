@@ -41,6 +41,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           java-version: '11'
+          distribution: 'zulu'
 
       # Step 2: Set up Azure CLI
      # - name: Set up Azure CLI
