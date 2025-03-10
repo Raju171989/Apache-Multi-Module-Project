@@ -115,7 +115,7 @@ jobs:
           helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
           kubectl apply -f charts/my-prometheus-chart/templates/prometheus-lb-service.yaml
 
-      # Step 8: Check if Grafana is already installed, if not, install
+      # Step 8: Check if Grafana is already installed, if not, instal
       - name: Install Grafana if not installed
         run: |
           if ! kubectl get deployment grafana --namespace monitoring; then
