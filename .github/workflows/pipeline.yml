@@ -84,12 +84,12 @@ jobs:
       # Step 7: Check if Prometheus is already installed, if not, install
       - name: Install Prometheus if not installed
         run: |
-          if ! kubectl get deployment prometheus-server --namespace monitoring; then
+          if ! kubectl get deployment prometheus-server --namespace monitoring-ps; then
             echo "Installing Prometheus..."
             helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
             helm repo update
-            kubectl get secret prometheus-password --namespace monitoring || kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring
-            helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
+            kubectl get secret prometheus-password --namespace monitoring-ps || kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring-ps
+            helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring-ps
           else
             echo "Prometheus is already installed."
           fi
@@ -97,12 +97,12 @@ jobs:
       # Step 8: Check if Grafana is already installed, if not, install
       - name: Install Grafana if not installed
         run: |
-          if ! kubectl get deployment grafana --namespace monitoring; then
+          if ! kubectl get deployment grafana --namespace monitoring-gr; then
             echo "Installing Grafana..."
             helm repo add grafana https://grafana.github.io/helm-charts
             helm repo update
-            kubectl get secret grafana-password --namespace monitoring || kubectl create secret generic grafana-password --from-literal=password="Welcome" --namespace monitoring
-            helm install grafana grafana/grafana --namespace monitoring --set adminPassword="Welcome"
+            kubectl get secret grafana-password --namespace monitoring-gr || kubectl create secret generic grafana-password --from-literal=password="Welcome" --namespace monitoring-gr
+            helm install grafana grafana/grafana --namespace monitoring-gr --set adminPassword="Welcome"
           else
             echo "Grafana is already installed."
           fi
