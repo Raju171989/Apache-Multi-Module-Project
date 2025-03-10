@@ -182,7 +182,7 @@ jobs:
       - name: Run Unit Tests and Collect Coverage
         run: |
           # Install Maven (required for Java projects)
-          mvn clean install -Dmaven.compiler.source=17 -Dmaven.compiler.target=17
+          mvn clean install -Dmaven.compiler.source=11 -Dmaven.compiler.target=11
 
           # Run tests with Maven (JUnit) and JaCoCo for code coverage
           mvn clean test jacoco:report
