@@ -1,83 +1,63 @@
-# SonarQube configuration for AKS
-
+# SonarQube Community Edition Configuration
 sonar:
-  # Enable or disable SonarQube
-  enabled: true
+  edition: ""  # Unset edition to use Community edition
+  community:
+    enabled: true  # Enable Community Edition
 
-  # Set the SonarQube version to deploy
+  # Image configuration
   image:
-    tag: "latest"  # Specify the version of SonarQube (e.g., "9.1.0")
+    tag: "latest"  # Use the latest stable version of SonarQube Community Edition
 
-  # External Database Configuration (PostgreSQL)
+  # Database configuration (PostgreSQL by default)
   database:
-    enabled: true          # Set to true if using an external database
-    host: "postgresql-db"  # Database host (use the external PostgreSQL host here)
-    port: 5432             # PostgreSQL default port
-    name: "sonar"          # Database name to be used for SonarQube
-    user: "sonar"          # Database user for SonarQube
-    password: "sonar"  # Database password
+    enabled: true  # Enable PostgreSQL database
+    host: "postgresql"  # Name of the PostgreSQL host (can be set to an external DB hostname if needed)
+    port: 5432  # Default PostgreSQL port
+    name: "sonar-db"  # Name of the database for SonarQube
+    user: "sonar"  # User for the SonarQube database
+    password: "sonar"  # Set the password for the PostgreSQL user
 
-  # SonarQube web server configurations
-  web:
-    port: 9000                # Web server port (SonarQube's default is 9000)
-    sslEnabled: false         # Set to true if you want to enable SSL
-
-  # Enable or disable monitoring (Prometheus integration)
-  monitoring:
-    enabled: true             # Enable Prometheus monitoring
-    monitoringPasscode: "Prometheus-monitoring-passcode"  # Passcode for Prometheus monitoring
-    # If using Kubernetes Secret for monitoring passcode:
-    # monitoringPasscodeSecretName: "sonarqube-monitoring-passcode-secret"
-    # monitoringPasscodeSecretKey: "monitoringPasscode"
-
-  # Configure resources (CPU, Memory) for SonarQube pods
+  # Resource requests and limits
   resources:
     requests:
-      cpu: "500m"             # Request 0.5 CPU cores
-      memory: "1Gi"           # Request 1 GiB of memory
+      cpu: "500m"  # Set CPU request to 500m
+      memory: "1Gi"  # Set memory request to 1Gi
     limits:
-      cpu: "2"                # Limit to 2 CPU cores
-      memory: "4Gi"           # Limit to 4 GiB of memory
+      cpu: "2"  # Set CPU limit to 2
+      memory: "4Gi"  # Set memory limit to 4Gi
 
-  # Persistent storage configuration for SonarQube
+  # Persistence configuration for SonarQube data
   persistence:
-    enabled: true             # Enable persistence to retain SonarQube data
-    size: "10Gi"              # Persistent volume size (e.g., 10Gi)
-    storageClass: "default"   # Storage class to use (can be adjusted based on your AKS setup)
+    enabled: true  # Enable persistence to store SonarQube data
+    size: "10Gi"  # Set the persistent storage size to 10Gi
+    storageClass: "default"  # Specify the storage class (use your AKS default or any other configured class)
 
-  # Configure Authentication (optional)
-  #authentication:
-    #enabled: true             # Enable authentication (can be LDAP, SSO, etc.)
-    # LDAP Authentication example:
-    #ldap:
-    #  enabled: false          # Disable LDAP by default
-     # server: "ldap://your-ldap-server"
-     # userDnPattern: "uid={0},ou=users,dc=example,dc=com"
-     # groupSearchBase: "ou=groups,dc=example,dc=com"
+  # Monitoring configuration
+  monitoring:
+    enabled: true  # Enable monitoring integration
+    #passcode: "Welcome"  # Set the monitoring passcode to "Welcome"
+    PasscodeSecretName: "Welcome"
+    PasscodeSecretKey: "Welcome"
 
-  # Proxy settings (if your SonarQube needs a proxy to access the internet)
-  #proxy:
-    #enabled: false            # Set to true if SonarQube needs to use a proxy
-    #host: "proxy.example.com" # Proxy host
-    #port: 8080                # Proxy port
-    #username: "proxy-user"    # Proxy username
-    #password: "proxy-password" # Proxy password
+  # Ingress configuration (for exposing SonarQube via LoadBalancer)
+  #ingress:
+    #enabled: false  # Set to false since we are using LoadBalancer
+    #hosts:
+      #- name: "sonarqube.yourdomain.com"  # Replace with your domain if you want to use Ingress
+    #annotations: {}  # Add any necessary annotations for your ingress controller
 
-  # Extra SonarQube configuration (optional)
-#  extraEnv:
-   # - name: "SONAR_ES_BOOTSTRAP_CHECKS"
- #     value: "false"  # Example of disabling ElasticSearch bootstrap checks
+  # Service configuration (use LoadBalancer to expose SonarQube externally)
+  service:
+    type: LoadBalancer  # Expose SonarQube via LoadBalancer
+    port: 9000  # The default SonarQube port
+    targetPort: 9000  # Target port for the service
+    loadBalancerIP: ""  # Leave empty to get an automatically assigned IP, or specify a static IP if needed
 
-# Network settings for ingress (optional)
-#ingress:
-  #enabled: true                 # Enable ingress if you want to expose SonarQube outside the cluster
-  #annotations: {}                # Add custom annotations for your ingress (e.g., for TLS termination)
-  #hosts:
-    #- host: "sonarqube.example.com"  # Replace with your desired hostname
-      #paths:
-        #- /
-  #tls:
-    #- secretName: "sonarqube-tls-secret"  # Specify your TLS secret for SSL (if applicable)
-      #hosts:
-        #- "sonarqube.example.com"   # Replace with your desired hostname
+  # Admin user configuration
+  admin:
+    password: "sonar"  # Admin password for SonarQube (replace with a secure password)
+
+  # Additional configurations (if you are using an external Elasticsearch or other custom configurations)
+  elasticsearch:
+    enabled: false  # Disable Elasticsearch if you're using an external Elasticsearch instance
 

@@ -16,14 +16,14 @@ jobs:
       # Full permissions to all resources
       contents: read  # Read access to repository contents (code, issues, etc.)
       issues: write   # Allow writing issues
-      pull-requests: write  # Allow creating pull requests
+      pull-requests: write  # Allow creating pull requestss
       actions: write   # Allow managing actions and workflows
       checks: write    # Allow write access to checks (for reporting statuses)
       deployments: write # Allow writing deployments
       statuses: write  # Allow status updates
       id-token: write
       # GitHub API permissions can be fully controlled with `repo` scope if required
-      # Note: you may define more granular permissions here
+      # Note: you may define more granular permissions heree
 
     steps:
       # Step 1: Checkout code
@@ -69,30 +69,51 @@ jobs:
         run: |
           if ! kubectl get deployment sonarqube --namespace monitoring; then
             echo "Installing SonarQube..."
-            helm repo add sonarqube https://SonarSource.github.io/helm-chart-sonarqube
+            helm repo add bitnami https://charts.bitnami.com/bitnami
             helm repo update
             PASSWORD="Welcome"
             kubectl get namespace monitoring || kubectl create namespace monitoring
             kubectl get secret sonarqube-password --namespace monitoring || kubectl create secret generic sonarqube-password --from-literal=password=$PASSWORD --namespace monitoring
             kubectl get secret sonarqube-monitoring-passcode-secretname --namespace monitoring || kubectl create secret generic sonarqube-monitoring-passcode-secretname --from-literal=monitoringPasscodeSecretName=monitoringPasscodeSecretName --namespace monitoring
             kubectl get secret sonarqube-monitoring-passcode-secretkey --namespace monitoring || kubectl create secret generic sonarqube-monitoring-passcode-secretkey --from-literal=monitoringPasscodeSecretKey=monitoringPasscodeSecretKey --namespace monitoring
-            helm install sonarqube sonarqube/sonarqube -f values.yaml --namespace monitoring --set sonarqubePassword=$PASSWORD
+            helm install sonarqube bitnami/sonarqube --namespace monitoring -f charts/sonarqube/values.yaml
           else
             echo "SonarQube is already installed."
           fi
 
       # Step 7: Check if Prometheus is already installed, if not, install
-      - name: Install Prometheus if not installed
+      #- name: Install Prometheus if not installed
+        #run: |
+          #if ! kubectl get deployment prometheus-server --namespace monitoring; then
+            #echo "Installing Prometheus..."
+            #helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+            #helm repo update
+            #kubectl get secret prometheus-password --namespace monitoring || kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring
+            #helm upgrade prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
+          #else
+            #echo "Prometheus is already installed."
+          #fi
+
+      - name: Check if Prometheus is Installed
+        id: check_prometheus
         run: |
-          if ! kubectl get deployment prometheus-server --namespace monitoring; then
-            echo "Installing Prometheus..."
-            helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-            helm repo update
-            kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring
-            helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
-          else
+          if kubectl get pods -n monitoring | grep -q prometheus; then
             echo "Prometheus is already installed."
+            echo "prometheus_installed=true" >> $GITHUB_ENV
+          else
+            echo "Prometheus is not installed."
+            echo "prometheus_installed=false" >> $GITHUB_ENV
           fi
+
+      - name: Install Prometheus (if not installed)
+        if: env.prometheus_installed == 'false'
+        run: |
+          echo "Installing Prometheus..."
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+          kubectl get secret prometheus-password --namespace monitoring || kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring
+          helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
+          kubectl apply -f prometheus-lb-service.yaml
 
       # Step 8: Check if Grafana is already installed, if not, install
       - name: Install Grafana if not installed
@@ -101,7 +122,7 @@ jobs:
             echo "Installing Grafana..."
             helm repo add grafana https://grafana.github.io/helm-charts
             helm repo update
-            kubectl create secret generic grafana-password --from-literal=password="Welcome" --namespace monitoring
+            kubectl get secret grafana-password --namespace monitoring || kubectl create secret generic grafana-password --from-literal=password="Welcome" --namespace monitoring
             helm install grafana grafana/grafana --namespace monitoring --set adminPassword="Welcome"
           else
             echo "Grafana is already installed."
@@ -127,7 +148,7 @@ jobs:
           
           # Send an email with the URLs (Configure your email sending tool in GitHub secrets)
           curl -X POST -H "Content-Type: application/json" \
-            -d '{"to": "your-email@example.com", "subject": "SonarQube, Prometheus, and Grafana Deployed", "body": "SonarQube: $SONARQUBE_URL, Prometheus: $PROMETHEUS_URL, Grafana: $GRAFANA_URL"}' \
+            -d '{"to": "rajudevops1989@gmail.com", "subject": "SonarQube, Prometheus, and Grafana Deployed", "body": "SonarQube: $SONARQUBE_URL, Prometheus: $PROMETHEUS_URL, Grafana: $GRAFANA_URL"}' \
             ${{ secrets.EMAIL_API_URL }}  # You can use an API like SendGrid or any SMTP API
 
       # Step 11: Run Unit Tests and Collect Coverage
