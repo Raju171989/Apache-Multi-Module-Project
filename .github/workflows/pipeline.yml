@@ -147,9 +147,30 @@ jobs:
           echo "Grafana URL: $GRAFANA_URL"
           
           # Send an email with the URLs (Configure your email sending tool in GitHub secrets)
-          curl -X POST -H "Content-Type: application/json" \
-            -d '{"to": "rajudevops1989@gmail.com", "subject": "SonarQube, Prometheus, and Grafana Deployed", "body": "SonarQube: $SONARQUBE_URL, Prometheus: $PROMETHEUS_URL, Grafana: $GRAFANA_URL"}' \
-            ${{ secrets.EMAIL_API_URL }}  # You can use an API like SendGrid or any SMTP API
+          curl -X POST "https://api.sendgrid.com/v3/mail/send" \
+          -H "Authorization: Bearer ${{ secrets.EMAIL_API_URL }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "personalizations": [
+              {
+                "to": [
+                  {
+                    "email": "rajudevops1989@gmail.com"
+                  }
+                ],
+                "subject": "SonarQube, Prometheus, and Grafana Deployed"
+              }
+            ],
+            "from": {
+              "email": "sender@example.com"
+            },
+            "content": [
+              {
+                "type": "text/plain",
+                "value": "SonarQube: $SONARQUBE_URL, Prometheus: $PROMETHEUS_URL, Grafana: $GRAFANA_URL"
+              }
+            ]
+          }'
 
       # Step 11: Run Unit Tests and Collect Coverage
       - name: Run Unit Tests and Collect Coverage
