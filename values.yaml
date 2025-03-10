@@ -1,6 +1,83 @@
+# SonarQube configuration for AKS
+
 sonar:
+  # Enable or disable SonarQube
+  enabled: true
+
+  # Set the SonarQube version to deploy
+  image:
+    tag: "latest"  # Specify the version of SonarQube (e.g., "9.1.0")
+
+  # External Database Configuration (PostgreSQL)
+  database:
+    enabled: true          # Set to true if using an external database
+    host: "postgresql-db"  # Database host (use the external PostgreSQL host here)
+    port: 5432             # PostgreSQL default port
+    name: "sonar"          # Database name to be used for SonarQube
+    user: "sonar"          # Database user for SonarQube
+    password: "sonar"  # Database password
+
+  # SonarQube web server configurations
+  web:
+    port: 9000                # Web server port (SonarQube's default is 9000)
+    sslEnabled: false         # Set to true if you want to enable SSL
+
+  # Enable or disable monitoring (Prometheus integration)
   monitoring:
-    enabled: true
-    #monitoringPasscode: "your-passcode-here"  # Or use a secret reference below:
-    monitoringPasscodeSecretName: "sonarqube-monitoring-passcode"
-    monitoringPasscodeSecretKey: "monitoringPasscode"
+    enabled: true             # Enable Prometheus monitoring
+    monitoringPasscode: "Prometheus-monitoring-passcode"  # Passcode for Prometheus monitoring
+    # If using Kubernetes Secret for monitoring passcode:
+    # monitoringPasscodeSecretName: "sonarqube-monitoring-passcode-secret"
+    # monitoringPasscodeSecretKey: "monitoringPasscode"
+
+  # Configure resources (CPU, Memory) for SonarQube pods
+  resources:
+    requests:
+      cpu: "500m"             # Request 0.5 CPU cores
+      memory: "1Gi"           # Request 1 GiB of memory
+    limits:
+      cpu: "2"                # Limit to 2 CPU cores
+      memory: "4Gi"           # Limit to 4 GiB of memory
+
+  # Persistent storage configuration for SonarQube
+  persistence:
+    enabled: true             # Enable persistence to retain SonarQube data
+    size: "10Gi"              # Persistent volume size (e.g., 10Gi)
+    storageClass: "default"   # Storage class to use (can be adjusted based on your AKS setup)
+
+  # Configure Authentication (optional)
+  #authentication:
+    #enabled: true             # Enable authentication (can be LDAP, SSO, etc.)
+    # LDAP Authentication example:
+    #ldap:
+    #  enabled: false          # Disable LDAP by default
+     # server: "ldap://your-ldap-server"
+     # userDnPattern: "uid={0},ou=users,dc=example,dc=com"
+     # groupSearchBase: "ou=groups,dc=example,dc=com"
+
+  # Proxy settings (if your SonarQube needs a proxy to access the internet)
+  #proxy:
+    #enabled: false            # Set to true if SonarQube needs to use a proxy
+    #host: "proxy.example.com" # Proxy host
+    #port: 8080                # Proxy port
+    #username: "proxy-user"    # Proxy username
+    #password: "proxy-password" # Proxy password
+
+  # Extra SonarQube configuration (optional)
+#  extraEnv:
+   # - name: "SONAR_ES_BOOTSTRAP_CHECKS"
+ #     value: "false"  # Example of disabling ElasticSearch bootstrap checks
+
+# Network settings for ingress (optional)
+#ingress:
+  #enabled: true                 # Enable ingress if you want to expose SonarQube outside the cluster
+  #annotations: {}                # Add custom annotations for your ingress (e.g., for TLS termination)
+  #hosts:
+    #- host: "sonarqube.example.com"  # Replace with your desired hostname
+      #paths:
+        #- /
+  #tls:
+    #- secretName: "sonarqube-tls-secret"  # Specify your TLS secret for SSL (if applicable)
+      #hosts:
+        #- "sonarqube.example.com"   # Replace with your desired hostname
+
