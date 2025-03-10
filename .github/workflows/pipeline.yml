@@ -113,7 +113,7 @@ jobs:
           helm repo update
           kubectl get secret prometheus-password --namespace monitoring || kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring
           helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
-          kubectl apply -f charts/my-prometheus-chart/templates/prometheus-lb-service.yaml
+    
 
       # Step 8: Check if Grafana is already installed, if not, instal
       - name: Install Grafana if not installed
