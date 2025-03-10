@@ -67,16 +67,16 @@ jobs:
       # Step 6: Check if SonarQube is already installed, if not, install
       - name: Install SonarQube if not installed
         run: |
-          if ! kubectl get deployment sonarqube --namespace sonarqube; then
+          if ! kubectl get deployment sonarqube --namespace monitoring; then
             echo "Installing SonarQube..."
             helm repo add bitnami https://charts.bitnami.com/bitnami
             helm repo update
             PASSWORD="Welcome"
-            kubectl get namespace sonarqube || kubectl create namespace sonarqube
-            kubectl get secret sonarqube-password --namespace sonarqube || kubectl create secret generic sonarqube-password --from-literal=password=$PASSWORD --namespace sonarqube
-            kubectl get secret sonarqube-monitoring-passcode-secretname --namespace sonarqube || kubectl create secret generic sonarqube-monitoring-passcode-secretname --from-literal=monitoringPasscodeSecretName=monitoringPasscodeSecretName --namespace sonarqube
-            kubectl get secret sonarqube-monitoring-passcode-secretkey --namespace sonarqube || kubectl create secret generic sonarqube-monitoring-passcode-secretkey --from-literal=monitoringPasscodeSecretKey=monitoringPasscodeSecretKey --namespace sonarqube
-            helm install sonarqube bitnami/sonarqube --namespace sonarqube -f charts/sonarqube/values.yaml
+            kubectl get namespace monitoring || kubectl create namespace monitoring
+            kubectl get secret sonarqube-password --namespace monitoring || kubectl create secret generic sonarqube-password --from-literal=password=$PASSWORD --namespace monitoring
+            kubectl get secret sonarqube-monitoring-passcode-secretname --namespace monitoring || kubectl create secret generic sonarqube-monitoring-passcode-secretname --from-literal=monitoringPasscodeSecretName=monitoringPasscodeSecretName --namespace monitoring
+            kubectl get secret sonarqube-monitoring-passcode-secretkey --namespace monitoring || kubectl create secret generic sonarqube-monitoring-passcode-secretkey --from-literal=monitoringPasscodeSecretKey=monitoringPasscodeSecretKey --namespace monitoring
+            helm install sonarqube bitnami/sonarqube --namespace monitoring -f charts/sonarqube/values.yaml
           else
             echo "SonarQube is already installed."
           fi
@@ -84,12 +84,12 @@ jobs:
       # Step 7: Check if Prometheus is already installed, if not, install
       - name: Install Prometheus if not installed
         run: |
-          if ! kubectl get deployment prometheus-server --namespace monitoring-ps; then
+          if ! kubectl get deployment prometheus-server --namespace monitoring; then
             echo "Installing Prometheus..."
             helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
             helm repo update
-            kubectl get secret prometheus-password --namespace monitoring-ps || kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring-ps
-            helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring-ps
+            kubectl get secret prometheus-password --namespace monitoring || kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring
+            helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
           else
             echo "Prometheus is already installed."
           fi
@@ -97,12 +97,12 @@ jobs:
       # Step 8: Check if Grafana is already installed, if not, install
       - name: Install Grafana if not installed
         run: |
-          if ! kubectl get deployment grafana --namespace monitoring-gr; then
+          if ! kubectl get deployment grafana --namespace monitoring; then
             echo "Installing Grafana..."
             helm repo add grafana https://grafana.github.io/helm-charts
             helm repo update
-            kubectl get secret grafana-password --namespace monitoring-gr || kubectl create secret generic grafana-password --from-literal=password="Welcome" --namespace monitoring-gr
-            helm install grafana grafana/grafana --namespace monitoring-gr --set adminPassword="Welcome"
+            kubectl get secret grafana-password --namespace monitoring || kubectl create secret generic grafana-password --from-literal=password="Welcome" --namespace monitoring
+            helm install grafana grafana/grafana --namespace monitoring --set adminPassword="Welcome"
           else
             echo "Grafana is already installed."
           fi
