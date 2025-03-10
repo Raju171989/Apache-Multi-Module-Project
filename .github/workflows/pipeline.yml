@@ -16,7 +16,7 @@ jobs:
       # Full permissions to all resources
       contents: read  # Read access to repository contents (code, issues, etc.)
       issues: write   # Allow writing issues
-      pull-requests: write  # Allow creating pull requests
+      pull-requests: write  # Allow creating pull requestss
       actions: write   # Allow managing actions and workflows
       checks: write    # Allow write access to checks (for reporting statuses)
       deployments: write # Allow writing deployments
