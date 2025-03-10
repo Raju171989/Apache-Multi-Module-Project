@@ -37,6 +37,11 @@ jobs:
       - name: Verify Azure CLI installation
         run: az --version
 
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+
       # Step 2: Set up Azure CLI
      # - name: Set up Azure CLI
        # uses: azure/setup-azurecli@v1
