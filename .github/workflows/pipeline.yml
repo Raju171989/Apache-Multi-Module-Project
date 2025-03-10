@@ -88,7 +88,7 @@ jobs:
             echo "Installing Prometheus..."
             helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
             helm repo update
-            kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring
+            kubectl get secret prometheus-password --namespace monitoring || kubectl create secret generic prometheus-password --from-literal=password="Welcome" --namespace monitoring
             helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring
           else
             echo "Prometheus is already installed."
@@ -101,7 +101,7 @@ jobs:
             echo "Installing Grafana..."
             helm repo add grafana https://grafana.github.io/helm-charts
             helm repo update
-            kubectl create secret generic grafana-password --from-literal=password="Welcome" --namespace monitoring
+            kubectl get secret grafana-password --namespace monitoring || kubectl create secret generic grafana-password --from-literal=password="Welcome" --namespace monitoring
             helm install grafana grafana/grafana --namespace monitoring --set adminPassword="Welcome"
           else
             echo "Grafana is already installed."
